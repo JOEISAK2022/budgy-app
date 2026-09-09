@@ -1501,7 +1501,7 @@ async function initApp(){
     if(!a.color){ const pair = ACCOUNT_GRADIENTS[idx % ACCOUNT_GRADIENTS.length]; a.color = pair[0]; a.color2 = pair[1]; }
     if(!a.color2) a.color2 = a.color;
   });
-  state.categories = (remote && remote.categories) || defaultCategories();
+  state.categories = (remote && remote.categories && remote.categories.length>0) ? remote.categories : defaultCategories();
   state.categories.forEach(c=>{ if(c.parentId===undefined) c.parentId=null; });
   state.transactions = (remote && remote.transactions) || [];
   state.transfers = (remote && remote.transfers) || [];
@@ -2990,7 +2990,8 @@ function renderCategoryDrawerLevel(parentId){
       oblTile.onclick = ()=> renderCategoryDrawerLevel('__obligations__');
       catGrid.appendChild(oblTile);
     }
-    state.categories.filter(c=>c.type===ui.txType && !c.hidden && !c.parentId).forEach(c=>{
+    const topCats = state.categories.filter(c=>c.type===ui.txType && !c.hidden && !c.parentId);
+    topCats.forEach(c=>{
       const subs = subcategoriesOf(c.id).filter(s=>!s.hidden);
       const el=document.createElement('div'); el.className='cat-item'+(!ui.selectedObligationId && ui.selectedCategory===c.id?' selected':''); el.style.position='relative';
       el.innerHTML = `<div class="cat-emoji">${c.emoji}</div><div class="cat-label">${c.name}</div>${subs.length? '<div style="position:absolute; top:4px; left:4px; font-size:10px;">›</div>':''}`;
@@ -3000,6 +3001,13 @@ function renderCategoryDrawerLevel(parentId){
       };
       catGrid.appendChild(el);
     });
+    if(topCats.length===0){
+      const empty = document.createElement('div'); empty.style.cssText='grid-column:span 4; font-size:12.5px; color:var(--text-muted); padding:14px 4px; text-align:center;';
+      empty.textContent = 'لا توجد تصنيفات متاحة. اضغط هنا لاستعادة التصنيفات الافتراضية';
+      empty.style.cursor='pointer';
+      empty.onclick = ()=>{ state.categories = defaultCategories(); saveState(); renderCategoryDrawerLevel(null); };
+      catGrid.appendChild(empty);
+    }
   } else {
     const parent = categoryById(parentId);
     document.getElementById('drawerTitle').textContent = parent.emoji + ' ' + parent.name;
